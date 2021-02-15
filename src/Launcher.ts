@@ -5,8 +5,9 @@ import logger, { Logger } from '@wdio/logger';
 import { SevereServiceError } from 'webdriverio';
 
 export interface ServiceOptions {
-    stopExistingSelenoid?: boolean;
     pathToBrowsersConfig: string;
+    autoPullImages?: boolean;
+    stopExistingSelenoid?: boolean;
     customSelenoidContainerName?: string;
     terminateWdioOnError?: boolean;
     selenoidVersion?: string;
@@ -37,7 +38,6 @@ export default class SelenoidStandaloneService {
     private selenoidVersion: string;
 
     constructor(serviceOptions: ServiceOptions) {
-        console.log(serviceOptions);
         this.options = serviceOptions;
         this.log = logger('wdio-selenoid-standalone-service');
         this.selenoidVersion = this.options.selenoidVersion || 'latest-release';
@@ -128,7 +128,7 @@ export default class SelenoidStandaloneService {
 
             for (const image of browserImages) {
                 this.log.info(`Pulling image ${image}`);
-                // await execa('docker', ['pull', image]);
+                await execa('docker', ['pull', image]);
             }
 
             return Promise.resolve('');
@@ -140,9 +140,9 @@ export default class SelenoidStandaloneService {
 
     async pullRequiredSelenoidVersion(): Promise<string> {
         this.log.info(`Pulling selenoid image 'aerokube/selenoid:${this.selenoidVersion}'`);
-        // const { stdout } = await execa('docker', ['pull', `aerokube/selenoid:${this.selenoidVersion}`]);
+        const { stdout } = await execa('docker', ['pull', `aerokube/selenoid:${this.selenoidVersion}`]);
 
-        return Promise.resolve('stdout');
+        return Promise.resolve(stdout);
     }
 
     async onPrepare(_config: unknown, _capabilities: unknown): Promise<string> {
@@ -152,11 +152,13 @@ export default class SelenoidStandaloneService {
         // check browsers file
         await this.verifySelenoidBrowserConfig();
 
-        // pull any containers listed in the browsers.json
-        await this.pullRequiredBrowserFiles();
+        if (this.options.autoPullImages) {
+            // pull any containers listed in the browsers.json
+            await this.pullRequiredBrowserFiles();
 
-        // pull selenoid if needed
-        await this.pullRequiredSelenoidVersion();
+            // pull selenoid if needed
+            await this.pullRequiredSelenoidVersion();
+        }
 
         // run container
         return this.startSelenoid();
