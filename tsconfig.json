@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "outDir": "dist",
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "lib": ["es6"],
+        "declaration": true,
+        "removeComments": false,
+        "stripInternal": true,
+        "alwaysStrict": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictNullChecks": true,
+        "sourceMap": true,
+        "newLine": "lf",
+        "skipLibCheck": true
+    },
+    "include": ["src"]
+}
