@@ -7,8 +7,6 @@ exports.config = {
     // WebdriverIO allows it to run your tests in arbitrary locations (e.g. locally or
     // on a remote machine).
     runner: 'local',
-    // automationProtocol: 'webdriver',
-    hostname: 'localhost',
     path: '/wd/hub',
     //
     // ==================
@@ -114,10 +112,11 @@ exports.config = {
     services: [
         [
             'selenoid-standalone',
-            {
-                pathToBrowsersConfig: './browsers.json',
-                terminateWdioOnError: true,
-            },
+            // {
+            //     pathToBrowsersConfig: './browsers.json',
+            //     terminateWdioOnError: true,
+            //     autoPullImages: true,
+            // },
         ],
     ],
     //

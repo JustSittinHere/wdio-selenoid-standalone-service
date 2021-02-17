@@ -5,10 +5,9 @@ import logger, { Logger } from '@wdio/logger';
 import { SevereServiceError } from 'webdriverio';
 
 export interface ServiceOptions {
-    pathToBrowsersConfig: string;
-    autoPullImages?: boolean;
-    stopExistingSelenoid?: boolean;
-    customSelenoidContainerName?: string;
+    pathToBrowsersConfig?: string;
+    skipAutoPullImages?: boolean;
+    selenoidContainerName?: string;
     terminateWdioOnError?: boolean;
     selenoidVersion?: string;
     port?: number;
@@ -31,34 +30,39 @@ export interface BrowserConfig {
 
 export default class SelenoidStandaloneService {
     private options: ServiceOptions;
-    private selenoidContainerName: string;
     private log: Logger;
     private dockerSocketPath: string;
     private selenoidBrowsersConfigPath: string;
-    private selenoidVersion: string;
 
     constructor(serviceOptions: ServiceOptions) {
-        this.options = serviceOptions;
+        this.options = {
+            pathToBrowsersConfig: './browsers.json',
+            skipAutoPullImages: false,
+            selenoidContainerName: 'wdio_selenoid',
+            terminateWdioOnError: true,
+            selenoidVersion: 'latest-release',
+            port: 4444,
+            ...serviceOptions,
+        };
+
         this.log = logger('wdio-selenoid-standalone-service');
-        this.selenoidVersion = this.options.selenoidVersion || 'latest-release';
-        this.selenoidContainerName = this.options.customSelenoidContainerName || 'wdio_selenoid';
 
         // fix docker paths for windows/*nix
         const platform = process.platform;
         if (platform === 'win32') {
             this.dockerSocketPath = '//var/run/docker.sock';
-            const rawBrowserPath = path.join(process.cwd(), this.options.pathToBrowsersConfig);
+            const rawBrowserPath = path.join(process.cwd(), this.options.pathToBrowsersConfig as string);
             this.selenoidBrowsersConfigPath = rawBrowserPath.replace('C', 'c').replace(/\\/g, '/');
         } else {
             this.dockerSocketPath = '/var/run/docker.sock';
-            this.selenoidBrowsersConfigPath = path.join(process.cwd(), this.options.pathToBrowsersConfig);
+            this.selenoidBrowsersConfigPath = path.join(process.cwd(), this.options.pathToBrowsersConfig as string);
         }
     }
 
     async stopSelenoid(): Promise<string> {
         this.log.info('Stopping any running selenoid containers');
         try {
-            const { stdout } = await execa('docker', ['rm', '-f', this.selenoidContainerName]);
+            const { stdout } = await execa('docker', ['rm', '-f', this.options.selenoidContainerName as string]);
 
             return Promise.resolve(stdout);
         } catch (error) {
@@ -75,7 +79,7 @@ export default class SelenoidStandaloneService {
             'run',
             '-d',
             '--name',
-            this.selenoidContainerName,
+            this.options.selenoidContainerName as string,
             '-p',
             '4444:4444',
             '-v',
@@ -83,7 +87,7 @@ export default class SelenoidStandaloneService {
             '-v',
             `${path.dirname(this.selenoidBrowsersConfigPath)}/:/etc/selenoid/:ro`,
             ...dockerArgs,
-            `aerokube/selenoid:${this.selenoidVersion}`,
+            `aerokube/selenoid:${this.options.selenoidVersion}`,
             ...selenoidArgs,
         ];
 
@@ -101,19 +105,31 @@ export default class SelenoidStandaloneService {
     }
 
     async verifySelenoidBrowserConfig(): Promise<void> {
-        const filePath = await fs.pathExists(this.options.pathToBrowsersConfig);
+        const filePath = await fs.pathExists(this.selenoidBrowsersConfigPath);
         if (!filePath) {
-            this.log.error(`Unable to find browsers.json at ${this.options.pathToBrowsersConfig}`);
+            this.log.error(`Unable to find browsers.json at ${this.selenoidBrowsersConfigPath}`);
 
             if (this.options.terminateWdioOnError === true) {
-                throw new SevereServiceError(`Unable to find browsers.json at ${this.options.pathToBrowsersConfig}`);
+                throw new SevereServiceError(`Unable to find browsers.json at ${this.selenoidBrowsersConfigPath}`);
             }
         }
 
         return Promise.resolve();
     }
 
-    async pullRequiredBrowserFiles(): Promise<string> {
+    async doesImageExist(imageName: string): Promise<boolean> {
+        try {
+            this.log.debug(`Checking image ${imageName} exists`);
+            const { stdout } = await execa('docker', ['image', 'ls', '-f', `reference=${imageName}`]);
+            const results = stdout.split('\n');
+            return Promise.resolve(results.length >= 2);
+        } catch (error) {
+            this.log.error(error);
+            return Promise.resolve(true);
+        }
+    }
+
+    async pullRequiredBrowserFiles(): Promise<void> {
         try {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const selenoidConfig: BrowserConfig = require(this.selenoidBrowsersConfigPath);
@@ -127,22 +143,35 @@ export default class SelenoidStandaloneService {
             });
 
             for (const image of browserImages) {
-                this.log.info(`Pulling image ${image}`);
-                await execa('docker', ['pull', image]);
+                if (await this.doesImageExist(image)) {
+                    this.log.info(`Skipping pull. Image: ${image} already exists`);
+                } else {
+                    this.log.info(`Pulling image ${image}`);
+                    await execa('docker', ['pull', image]);
+                }
             }
-
-            return Promise.resolve('');
         } catch (error) {
             this.log.error(error);
-            return Promise.resolve(error);
         }
+
+        return Promise.resolve();
     }
 
-    async pullRequiredSelenoidVersion(): Promise<string> {
-        this.log.info(`Pulling selenoid image 'aerokube/selenoid:${this.selenoidVersion}'`);
-        const { stdout } = await execa('docker', ['pull', `aerokube/selenoid:${this.selenoidVersion}`]);
+    async pullRequiredSelenoidVersion(): Promise<void> {
+        const image = `aerokube/selenoid:${this.options.selenoidVersion as string}`;
 
-        return Promise.resolve(stdout);
+        if (await this.doesImageExist(image)) {
+            this.log.info(`Sipping pull.  Image ${image} already exists`);
+        } else {
+            try {
+                this.log.info(`Pulling selenoid image 'aerokube/selenoid:${this.options.selenoidVersion}'`);
+                await execa('docker', ['pull', `aerokube/selenoid:${this.options.selenoidVersion}`]);
+            } catch (error) {
+                this.log.error(error);
+            }
+        }
+
+        return Promise.resolve();
     }
 
     async onPrepare(_config: unknown, _capabilities: unknown): Promise<string> {
@@ -152,7 +181,7 @@ export default class SelenoidStandaloneService {
         // check browsers file
         await this.verifySelenoidBrowserConfig();
 
-        if (this.options.autoPullImages) {
+        if (!this.options.skipAutoPullImages) {
             // pull any containers listed in the browsers.json
             await this.pullRequiredBrowserFiles();
 
