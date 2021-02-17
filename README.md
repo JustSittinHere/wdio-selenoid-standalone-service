@@ -10,6 +10,14 @@ __Note:__ If you use this service you don't need any other driver services (e.g.
 
 __Note:__ You might notice we pull the version of selenoid with VNC enabled.  To take advantage of this, please check out the [wdio-selenoid-ui-service](https://github.com/JustSittinHere/wdio-selenoid-ui-service) for more information.
 
+## Benefits of Selenoid
+
+* Quickly change browser versions without having to install any software
+* Consistent execution environment between local and CI
+* Video Recording of all tests
+* VNC "Live View" support to view the tests as they run, even on a headless ci server
+* Specify any screen resolution and timezone without changing your system setup
+
 ## Installation
 
 Before starting make sure you have [Docker](https://www.docker.com/) installed
