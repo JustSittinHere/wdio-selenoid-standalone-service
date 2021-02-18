@@ -1,0 +1,11 @@
+.vscode
+node_modules
+test
+.eslintrc.js
+.gitignore
+.npmignore
+.prettierrc.js
+jest.config.js
+tsconfig.json
+wdio.conf.js
+yarn.lock
