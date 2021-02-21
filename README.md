@@ -8,7 +8,7 @@ As long as you have docker installed, you can run any of the [available images](
 
 __Note:__ If you use this service you don't need any other driver services (e.g. [wdio-chromedriver-service](https://www.npmjs.com/package/wdio-chromedriver-service)) anymore. All [browsers supported](https://aerokube.com/images/latest/#_browser_image_information) by selenoid can be started using this service.
 
-__Note:__ You might notice we pull the version of selenoid with VNC enabled.  To take advantage of this, please check out the [wdio-selenoid-ui-service](https://github.com/JustSittinHere/wdio-selenoid-ui-service) for more information.
+__Note:__ You might notice we pull the version of selenoid with VNC enabled.  To take advantage of this, please check out the [wdio-selenoid-ui-service](https://github.com/JustSittinHere/wdio-selenoid-standalone-ui-service) for more information.
 
 ## Benefits of Selenoid
 
@@ -83,7 +83,7 @@ Next you need to create the `browsers.json` file which is a configuration file t
     "firefox": {
         "default": "85.0",
         "versions": {
-            "88.0": {
+            "85.0": {
                 "image": "selenoid/vnc:firefox_85.0",
                 "port": "4444",
                 "path": "/wd/hub"
@@ -121,7 +121,7 @@ Default: `wdio_selenoid`
 
 ### terminateWdioOnError
 
-As this service should be the only browser driver needed, if there is a problem starting it will issue a `SevereServiceError` execption and stop wdio from running.  If you want to disable this behaviour set this to false
+As this service should be the only browser driver needed, if there is a problem starting it will issue a `SevereServiceError` exception and stop wdio from running.  If you want to disable this behavior set this to false
 
 Type: `Boolean`
 
@@ -146,6 +146,7 @@ Default: `4444`
 ## Warning
 
 The following options are experimental and can cause unexpected problems.  Use with caution
+
 ### dockerArgs
 
 Any additional arguments you want to pass to docker run when starting the container.  [docker run options](https://docs.docker.com/engine/reference/commandline/run/#options)
@@ -198,7 +199,7 @@ You need to set `path: 'wb/hub'` in your `wdio.conf.js` file as wdio will defaul
 
 ### Request failed with status 400 due to Error: Requested environment is not available
 
-`browers.json` is referencing a browser that is not supported by selenoid.  Supported list can be found [here](https://aerokube.com/selenoid/latest/#_browser_images)
+`browsers.json` is referencing a browser that is not supported by selenoid.  Supported list can be found [here](https://aerokube.com/selenoid/latest/#_browser_images)
 
 ### I want to use my own dockerhub mirror
 
@@ -206,7 +207,7 @@ Update the `browsers.json` file and change the image name to also include your m
 
 ```json
 {
-    "chromex": {
+    "chrome": {
         "default": "88.0",
         "versions": {
             "88.0": {

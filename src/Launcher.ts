@@ -161,7 +161,7 @@ export default class SelenoidStandaloneService {
         const image = `aerokube/selenoid:${this.options.selenoidVersion as string}`;
 
         if (await this.doesImageExist(image)) {
-            this.log.info(`Sipping pull.  Image ${image} already exists`);
+            this.log.info(`Skipping pull.  Image ${image} already exists`);
         } else {
             try {
                 this.log.info(`Pulling selenoid image 'aerokube/selenoid:${this.options.selenoidVersion}'`);
