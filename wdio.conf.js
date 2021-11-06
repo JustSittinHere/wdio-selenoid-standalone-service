@@ -1,3 +1,5 @@
+const path = require('path');
+
 exports.config = {
     //
     // ====================
@@ -111,7 +113,7 @@ exports.config = {
     // commands. Instead, they hook themselves up into the test process.
     services: [
         [
-            'selenoid-standalone',
+            path.join(process.cwd(), 'dist', 'index.js'),
             // {
             //     pathToBrowsersConfig: './browsers.json',
             //     terminateWdioOnError: true,
